@@ -232,7 +232,8 @@ int jsd_sdo_data_type_size(jsd_sdo_data_type_t type) {
 void jsd_sdo_push_async_request(jsd_t* self, uint16_t slave_id, uint16_t index,
                                 uint8_t subindex, jsd_sdo_data_type_t data_type,
                                 jsd_sdo_data_t*    data,
-                                jsd_sdo_req_type_t request_type) {
+                                jsd_sdo_req_type_t request_type, uint64_t request_id) {
+  
   assert(self->ecx_context.slavelist[slave_id].eep_id == JSD_EGD_PRODUCT_CODE);
 
   jsd_sdo_req_t req;
@@ -242,6 +243,7 @@ void jsd_sdo_push_async_request(jsd_t* self, uint16_t slave_id, uint16_t index,
   req.sdo_index    = index;
   req.sdo_subindex = subindex;
   req.data_type    = data_type;
+  req.request_id   = request_id;
 
   if (request_type == JSD_SDO_REQ_TYPE_WRITE) {
     if (data == NULL) {
@@ -263,15 +265,15 @@ void jsd_sdo_push_async_request(jsd_t* self, uint16_t slave_id, uint16_t index,
 
 void jsd_sdo_set_param_async(jsd_t* self, uint16_t slave_id, uint16_t index,
                              uint8_t subindex, jsd_sdo_data_type_t data_type,
-                             void* data) {
+                             void* data, uint64_t request_id) {
   jsd_sdo_push_async_request(self, slave_id, index, subindex, data_type, data,
-                             JSD_SDO_REQ_TYPE_WRITE);
+                             JSD_SDO_REQ_TYPE_WRITE, request_id);
 }
 
 void jsd_sdo_get_param_async(jsd_t* self, uint16_t slave_id, uint16_t index,
-                             uint8_t subindex, jsd_sdo_data_type_t data_type) {
+                             uint8_t subindex, jsd_sdo_data_type_t data_type, uint64_t request_id) {
   jsd_sdo_push_async_request(self, slave_id, index, subindex, data_type, NULL,
-                             JSD_SDO_REQ_TYPE_READ);
+                             JSD_SDO_REQ_TYPE_READ, request_id);
 }
 
 ///////////////////  BLOCKING SDO /////////////////////////////
@@ -348,19 +350,23 @@ bool jsd_sdo_get_ca_param_blocking(ecx_contextt* ecx_context, uint16_t slave_id,
 }
 
 void jsd_async_sdo_process_response(jsd_t* self, uint16_t slave_id) {
-  jsd_slave_state_t* state = &self->slave_states[slave_id];
+  if(self->cleanup_async_sdo_res_circq) {
+    jsd_slave_state_t* state = &self->slave_states[slave_id];
+     
+    // pop the response queue so it does not overflow
+    while (!jsd_sdo_req_cirq_is_empty(&self->jsd_sdo_res_cirq[slave_id])) {
+      jsd_sdo_req_t req = jsd_sdo_req_cirq_pop(&self->jsd_sdo_res_cirq[slave_id]);
+      state->num_async_sdo_responses++;
 
-  // pop the response queue so it does not overflow
-  while (!jsd_sdo_req_cirq_is_empty(&self->jsd_sdo_res_cirq[slave_id])) {
-    jsd_sdo_req_t req = jsd_sdo_req_cirq_pop(&self->jsd_sdo_res_cirq[slave_id]);
-    state->num_async_sdo_responses++;
-
-    if (!req.success) {
-      ERROR("Slave[%u] Failed last SDO operation on 0x%X:%u, wkc = %d",
-            slave_id, req.sdo_index, req.sdo_subindex, req.wkc);
+      if (!req.success) {
+        ERROR("Slave[%u] Failed last SDO operation on 0x%X:%u, wkc = %d",
+              slave_id, req.sdo_index, req.sdo_subindex, req.wkc);
+      }
+      // if devices require handling of async SDO reads, a device-specific handler
+      // should be implemented instead of writing that logic in this default
+      // handler. See jsd_egd_async_sdo_process for an example.
     }
-    // if devices require handling of async SDO reads, a device-specific handler
-    // should be implemented instead of writing that logic in this default
-    // handler. See jsd_egd_async_sdo_process for an example.
   }
 }
+
+

@@ -110,6 +110,7 @@ typedef struct {
   jsd_sdo_data_t      data;
   jsd_sdo_data_type_t data_type;
   bool                success;  // response-only
+  uint64_t            request_id;
 
   // Reserved parameters
   int wkc;  // debugging
@@ -147,6 +148,8 @@ typedef struct {
   pthread_cond_t     sdo_thread_cond;
   bool               sdo_join_flag;
 
+  bool cleanup_async_sdo_res_circq;
+  
   // this should be on the order of 100KB, consider allocating on heap if this
   // grows
   jsd_sdo_req_cirq_t jsd_sdo_res_cirq[EC_MAXSLAVE];

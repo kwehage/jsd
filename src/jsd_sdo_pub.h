@@ -20,11 +20,13 @@ extern "C" {
  * @param subindex the COE parameter subindex value
  * @param data_type the type of the COE parameter e.g. U16
  * @param param_in raw pointer to a value of data_type type
+ * @param request_id request id supplied by application to match 
+          response in completion queue with initial request
  * @return void
  */
 void jsd_sdo_set_param_async(jsd_t* self, uint16_t slave_id, uint16_t index,
                              uint8_t subindex, jsd_sdo_data_type_t data_type,
-                             void* param_in);
+                             void* param_in, uint64_t request_id);
 
 /** A request to retrieve a COE parameter after initialization using 
  * the background SDO thread
@@ -37,10 +39,13 @@ void jsd_sdo_set_param_async(jsd_t* self, uint16_t slave_id, uint16_t index,
  * @param index the COE parameter index value
  * @param subindex the COE parameter subindex value
  * @param data_type the type of the COE parameter e.g. U16
+ * @param request_id request id supplied by application to match 
+          response in completion queue with initial request
  * @return void
  */
 void jsd_sdo_get_param_async(jsd_t* self, uint16_t slave_id, uint16_t index,
-                             uint8_t subindex, jsd_sdo_data_type_t data_type);
+                             uint8_t subindex, jsd_sdo_data_type_t data_type,
+                             uint64_t request_id);
 
 
 /** @brief A blocking request to set a COE parameter

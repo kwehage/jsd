@@ -30,6 +30,11 @@
 jsd_t* jsd_alloc() {
   jsd_t* self;
   self = (jsd_t*)calloc(1, sizeof(jsd_t));
+  
+  // allow jsd to cleanup circular sdo response queue,
+  // set to false if your application will empty and process
+  // sdo set/get response data
+  self->cleanup_async_sdo_res_circq = true;
 
   self->ecx_context.port = (ecx_portt*)calloc(1, sizeof(ecx_portt));
   self->ecx_context.slavelist =

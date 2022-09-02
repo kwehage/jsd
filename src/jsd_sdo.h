@@ -22,7 +22,8 @@ int jsd_sdo_data_type_size(jsd_sdo_data_type_t type);
 void jsd_sdo_push_async_request(jsd_t* self, uint16_t slave_id, uint16_t index,
                                 uint8_t subindex, jsd_sdo_data_type_t data_type,
                                 jsd_sdo_data_t*    data,
-                                jsd_sdo_req_type_t request_type);
+                                jsd_sdo_req_type_t request_type,
+                                uint64_t request_id);
 
 void jsd_async_sdo_process_response(jsd_t* self, uint16_t slave_id);
 
